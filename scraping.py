@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
 import pprint
 import pandas as pd
+from itertools import accumulate
 
 HEADER = {'User-Agent': 'Mozilla/5.0'}
 
@@ -83,9 +84,11 @@ def replace_positions_with_points(results, year):
     points, fl_points = get_point_system(year)
 
     for i in range(len(results)):
-        if not results[i].isnumeric():
+        if "(" in results[i]:
+            results[i] = results[i][:results[i].find("(")]
+        if type(results[i]) == float or not results[i].isnumeric():
             results[i] = 0
-        elif int(results[i]) > len(points):
+        elif int(results[i]) >= len(points):
             results[i] = 0
         else:
             results[i] = points[int(results[i])]
@@ -96,18 +99,39 @@ def replace_positions_with_points(results, year):
 # creates a graph of points scored during the season by drivers from the top 5 in championships
 def get_championships_graph(year):
     champ_url = f"https://gpracingstats.com/seasons/{year}-world-championship/driver-standings/"
-    champ_src = requests.get(champ_url, headers=HEADER).text
-    # champ_soup = BeautifulSoup(champ_src, "lxml")
 
     table = pd.read_html(champ_url, index_col=0)[0]
-
+    labels = list(table.columns)[1:-1]
     for i in range(6):
-        x = list(table.iloc[i][1:-1])
-        x = replace_positions_with_points(x, year)
-        print(x)
-        break
-    # pprint.pprint(table.iloc[1])
-    # pprint.pprint(table)
+        y = list(table.iloc[i][1:-1])
+        y = list(accumulate(replace_positions_with_points(y, year)))
+        driver_record = table["Driver"].iloc[i]
+        driver_name = driver_record[driver_record.find(")") + 1: driver_record.find("(", 2)]
+        plt.plot(labels, y, label=driver_name)
+    plt.legend(loc="upper left")
+    plt.show()
 
 
-# get_championships_graph(1990)
+def get_constructors_cup_graph(year):
+    champ_url = f"https://gpracingstats.com/seasons/{year}-world-championship/constructor-standings/"
+
+    table = pd.read_html(champ_url, index_col=0)[0]
+    labels = list(table.columns)[1:-1]
+    pprint.pprint(table)
+    return
+    for i in range(0, 20, 2):
+        y1 = list(table.iloc[i][1:-1])
+        y2 = list(table.iloc[i + 1][1:-1])
+
+        y1 = pd.Series(accumulate(replace_positions_with_points(y1, year)))
+        y2 = pd.Series(accumulate(replace_positions_with_points(y2, year)))
+        y = list(y1 + y2)
+
+        constructor_record = table["Constructor"].iloc[i]
+        constructor = constructor_record[constructor_record.find(")") + 1:]
+        plt.plot(labels, y, label=constructor)
+    plt.legend(loc="upper left")
+    plt.show()
+
+
+get_constructors_cup_graph(1988)
