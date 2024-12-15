@@ -142,4 +142,28 @@ def get_constructors_cup_graph(year):
     plt.show()
 
 
-# get_constructors_cup_graph(2005)
+def get_h2h_qualifying_score(year):
+    qualy_url = f"https://gpracingstats.com/seasons/{year}-world-championship/qualifying-stats/"
+    qualy_src = requests.get(qualy_url, headers=HEADER).text
+    qualy_soup = BeautifulSoup(qualy_src, "lxml")
+
+    teams = {}
+    drivers1 = []
+    drivers2 = []
+
+    for row in qualy_soup.find(class_="summary quali-h2h sortable").find("tbody").find_all("tr"):
+        data = row.find_all("td")
+        constructor = data[0].text
+        drivers1.append(data[1].text)
+        drivers2.append(data[3].text)
+        score1, score2 = map(int, data[2].text.split("-"))
+
+        if constructor not in teams:
+            teams[constructor] = [score1, score2]
+    df = pd.DataFrame.from_dict(teams, orient="index", columns=["D1", "D2"])
+    df.plot.bar()
+
+    plt.show()
+
+
+get_h2h_qualifying_score(2020)
