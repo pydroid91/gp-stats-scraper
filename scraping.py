@@ -84,9 +84,11 @@ def replace_positions_with_points(results, year):
     points, fl_points = get_point_system(year)
 
     for i in range(len(results)):
-        if "(" in results[i]:
+        if "float" in str(type(results[i])):
+            results[i] = 0
+        elif "(" in results[i]:
             results[i] = results[i][:results[i].find("(")]
-        if type(results[i]) == float or not results[i].isnumeric():
+        elif not results[i].isnumeric():
             results[i] = 0
         elif int(results[i]) >= len(points):
             results[i] = 0
@@ -113,25 +115,31 @@ def get_championships_graph(year):
 
 
 def get_constructors_cup_graph(year):
+    if year < 1958 or year > 2024:
+        return
     champ_url = f"https://gpracingstats.com/seasons/{year}-world-championship/constructor-standings/"
-
     table = pd.read_html(champ_url, index_col=0)[0]
     labels = list(table.columns)[1:-1]
     pprint.pprint(table)
-    return
-    for i in range(0, 20, 2):
-        y1 = list(table.iloc[i][1:-1])
-        y2 = list(table.iloc[i + 1][1:-1])
-
-        y1 = pd.Series(accumulate(replace_positions_with_points(y1, year)))
-        y2 = pd.Series(accumulate(replace_positions_with_points(y2, year)))
-        y = list(y1 + y2)
-
+    constructors_points = {}
+    for i in range(len(table.index) - 1):
         constructor_record = table["Constructor"].iloc[i]
         constructor = constructor_record[constructor_record.find(")") + 1:]
-        plt.plot(labels, y, label=constructor)
+        if constructor not in constructors_points and len(constructors_points) == 10:
+            break
+
+        y = list(table.iloc[i][1:-1])
+        y = pd.Series(accumulate(replace_positions_with_points(y, year)))
+        if constructor not in constructors_points:
+            constructors_points[constructor] = y
+        else:
+            constructors_points[constructor] += y
+
+    for constructor in constructors_points:
+        plt.plot(labels, constructors_points[constructor], label=constructor)
+
     plt.legend(loc="upper left")
     plt.show()
 
 
-get_constructors_cup_graph(1988)
+# get_constructors_cup_graph(2005)
