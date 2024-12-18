@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use("Agg")
 import requests
 from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
@@ -30,8 +32,12 @@ def get_best_laps(year):
     bl_constructors = {}
 
     for bl_row in bl_soup.find(class_="summary sortable chronology-season").find("tbody").find_all("tr"):
-        driver = bl_row.find_all("td")[3].find("a").text
-        constructor = bl_row.find_all("td")[4].find("a").text
+        try:
+            driver = bl_row.find_all("td")[3].find("a").text
+            driver = driver.split()[1][:3].upper()
+            constructor = bl_row.find_all("td")[4].find("a").text
+        except AttributeError:
+            continue
 
         if driver not in bl_drivers:
             bl_drivers[driver] = 1
@@ -42,12 +48,25 @@ def get_best_laps(year):
             bl_constructors[constructor] = 1
         else:
             bl_constructors[constructor] += 1
+    plt.figure()
+    plt.bar(bl_constructors.keys(), bl_constructors.values())
+    plt.savefig(f"static/{year}bl.png")
+    plt.close()
+
+    plt.figure()
     plt.bar(bl_drivers.keys(), bl_drivers.values())
-    plt.show()
+    plt.savefig(f"static/{year}bl2.png")
+    plt.close()
+
+    return f"static/{year}bl.png", f"static/{year}bl2.png"
+
+    # plt.show()
 
 
 # creates pie chart of constructors cup points in certain season
 def get_constructors_cup_points(year):
+    if year < 1958:
+        return f"static/{year}.png"
     pts_url = f"https://gpracingstats.com/seasons/{year}-world-championship/constructor-standings/"
     pts_src = requests.get(pts_url, headers=HEADER).text
     pts_soup = BeautifulSoup(pts_src, "lxml")
@@ -56,11 +75,26 @@ def get_constructors_cup_points(year):
     for row in pts_soup.find(class_="summary season-standings constructor").find("tbody").find_all("tr")[:-1]:
         cells = row.find_all("td")
         if not cells[1].get("style"):
-            constructor, pts = cells[1].find("a").text, int(cells[-1].text)
+            pts = cells[-1].text
+            if "(" in pts:
+                pts = pts[:pts.find("(") - 1]
+            if "." in pts:
+                pts = pts[:pts.find("(") - 1]
+            if not str(pts).isnumeric():
+                break
+
+            if "(" in pts:
+                pts = pts[:pts.find("(")]
+            pts = int(pts)
+            constructor = cells[1].find("a").text
             points[constructor] = pts
 
+    plt.figure()
     plt.pie(points.values(), labels=points.keys())
-    plt.show()
+    plt.savefig(f"static/{year}ccpts.png")
+    plt.close()
+    return f"static/{year}ccpts.png"
+    # plt.show()
 
 
 # returns point system used in certain season
@@ -86,15 +120,16 @@ def replace_positions_with_points(results, year):
     for i in range(len(results)):
         if "float" in str(type(results[i])):
             results[i] = 0
-        elif "(" in results[i]:
-            results[i] = results[i][:results[i].find("(")]
-        elif not results[i].isnumeric():
+            continue
+        if not results[i].isnumeric():
             results[i] = 0
-        elif int(results[i]) >= len(points):
+            continue
+        if "(" in results[i]:
+            results[i] = results[i][:results[i].find("(")]
+        if int(results[i]) >= len(points):
             results[i] = 0
         else:
             results[i] = points[int(results[i])]
-
     return results
 
 
@@ -104,6 +139,7 @@ def get_championships_graph(year):
 
     table = pd.read_html(champ_url, index_col=0)[0]
     labels = list(table.columns)[1:-1]
+    plt.figure()
     for i in range(6):
         y = list(table.iloc[i][1:-1])
         y = list(accumulate(replace_positions_with_points(y, year)))
@@ -111,7 +147,10 @@ def get_championships_graph(year):
         driver_name = driver_record[driver_record.find(")") + 1: driver_record.find("(", 2)]
         plt.plot(labels, y, label=driver_name)
     plt.legend(loc="upper left")
-    plt.show()
+    plt.savefig(f"static/{year}chg.png")
+    plt.close()
+    return f"static/{year}chg.png"
+    # plt.show()
 
 
 def get_constructors_cup_graph(year):
@@ -120,8 +159,9 @@ def get_constructors_cup_graph(year):
     champ_url = f"https://gpracingstats.com/seasons/{year}-world-championship/constructor-standings/"
     table = pd.read_html(champ_url, index_col=0)[0]
     labels = list(table.columns)[1:-1]
-    pprint.pprint(table)
+
     constructors_points = {}
+    plt.figure()
     for i in range(len(table.index) - 1):
         constructor_record = table["Constructor"].iloc[i]
         constructor = constructor_record[constructor_record.find(")") + 1:]
@@ -139,7 +179,9 @@ def get_constructors_cup_graph(year):
         plt.plot(labels, constructors_points[constructor], label=constructor)
 
     plt.legend(loc="upper left")
-    plt.show()
+    plt.savefig(f"static/{year}cc.png")
+    plt.close()
+    return f"static/{year}cc.png"
 
 
 def get_h2h_qualifying_score(year):
@@ -165,5 +207,6 @@ def get_h2h_qualifying_score(year):
 
     plt.show()
 
-
-get_h2h_qualifying_score(2020)
+# for y in range(1950, 2025):
+#     print(y)
+#     get_championships_graph(y)
