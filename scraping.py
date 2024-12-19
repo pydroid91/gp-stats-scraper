@@ -6,20 +6,9 @@ import matplotlib.pyplot as plt
 import pprint
 import pandas as pd
 from itertools import accumulate
+import io
 
 HEADER = {'User-Agent': 'Mozilla/5.0'}
-
-
-# seasons_url = "https://gpracingstats.com/seasons/"
-# src = requests.get(seasons_url, headers=HEADER).text
-# soup = BeautifulSoup(src, 'lxml')
-#
-# seasons_list = soup.find(class_="summary sortable season-list align-r-3 data-items-3")
-# year = input()
-#
-# season_href = seasons_list.find("tbody").find("a", text=year).get("href")
-# if season_href:
-#     print(season_href)
 
 
 # creates bar plots of number of best laps for drivers and constructors in certain season
@@ -48,19 +37,22 @@ def get_best_laps(year):
             bl_constructors[constructor] = 1
         else:
             bl_constructors[constructor] += 1
+
     plt.figure()
     plt.bar(bl_constructors.keys(), bl_constructors.values())
-    plt.savefig(f"static/{year}bl.png")
+    plt.xticks(fontsize=8)
+    b = io.BytesIO()
+    plt.savefig(b, format="png")
+    b.seek(0)
     plt.close()
 
     plt.figure()
     plt.bar(bl_drivers.keys(), bl_drivers.values())
-    plt.savefig(f"static/{year}bl2.png")
+    b2 = io.BytesIO()
+    plt.savefig(b2, format="png")
+    b2.seek(0)
     plt.close()
-
-    return f"static/{year}bl.png", f"static/{year}bl2.png"
-
-    # plt.show()
+    return [b, b2]
 
 
 # creates pie chart of constructors cup points in certain season
@@ -91,11 +83,11 @@ def get_constructors_cup_points(year):
 
     plt.figure()
     plt.pie(points.values(), labels=points.keys())
-    plt.savefig(f"static/{year}ccpts.png")
+    b = io.BytesIO()
+    plt.savefig(b, format="png")
+    b.seek(0)
     plt.close()
-    return f"static/{year}ccpts.png"
-    # plt.show()
-
+    return b
 
 # returns point system used in certain season
 def get_point_system(year):
@@ -147,10 +139,12 @@ def get_championships_graph(year):
         driver_name = driver_record[driver_record.find(")") + 1: driver_record.find("(", 2)]
         plt.plot(labels, y, label=driver_name)
     plt.legend(loc="upper left")
-    plt.savefig(f"static/{year}chg.png")
+    plt.xticks(rotation=90)
+    b = io.BytesIO()
+    plt.savefig(b, format="png")
+    b.seek(0)
     plt.close()
-    return f"static/{year}chg.png"
-    # plt.show()
+    return b
 
 
 def get_constructors_cup_graph(year):
@@ -179,9 +173,13 @@ def get_constructors_cup_graph(year):
         plt.plot(labels, constructors_points[constructor], label=constructor)
 
     plt.legend(loc="upper left")
-    plt.savefig(f"static/{year}cc.png")
+    plt.xticks(rotation=90)
+
+    b = io.BytesIO()
+    plt.savefig(b, format="png")
+    b.seek(0)
     plt.close()
-    return f"static/{year}cc.png"
+    return b
 
 
 def get_h2h_qualifying_score(year):
@@ -207,6 +205,11 @@ def get_h2h_qualifying_score(year):
 
     plt.show()
 
-# for y in range(1950, 2025):
-#     print(y)
-#     get_championships_graph(y)
+
+def parse_all_plots(year):
+    plots = []
+    plots.extend(get_best_laps(year))
+    plots.append(get_championships_graph(year))
+    plots.append(get_constructors_cup_graph(year))
+    plots.append(get_constructors_cup_points(year))
+    return plots

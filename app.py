@@ -1,7 +1,50 @@
-from flask import Flask, render_template, request
-from scraping import *
+from flask import Flask, render_template, request, send_file
+from scraping import parse_all_plots
+import sqlite3
+import io
 
 app = Flask(__name__)
+db = "images.db"
+
+
+def create_db():
+    conn = sqlite3.connect(db)
+    cursor = conn.cursor()
+
+    cursor.execute('''
+            CREATE TABLE IF NOT EXISTS images (
+                year INTEGER PRIMARY KEY,
+                bl_image BLOB,
+                bl_image2 BLOB,
+                champ_graph_image BLOB,
+                cc_graph_image BLOB,
+                cc_pts_image BLOB
+            )
+        ''')
+
+
+def check_images(year):
+    conn = sqlite3.connect(db)
+    cursor = conn.cursor()
+    cursor.execute("SELECT year FROM images WHERE year = ?", (year,))
+    return cursor.fetchone()
+
+
+def upload_image_to_db(year, images):
+    conn = sqlite3.connect(db)
+    cursor = conn.cursor()
+    cursor.execute('INSERT OR IGNORE INTO images VALUES (?, ?, ?, ?, ?, ?)',
+                   (int(year), images[0].read(), images[1].read(), images[2].read(), images[3].read(), images[4].read()))
+    conn.commit()
+    conn.close()
+
+
+def get_images(year):
+    conn = sqlite3.connect(db)
+    cursor = conn.cursor()
+
+    cursor.execute('''SELECT * FROM images WHERE year = ?''', (year,))
+    return cursor.fetchone()
 
 
 @app.route('/', methods=["GET", "POST"])
@@ -12,14 +55,26 @@ def get_inp():
     if request.method == "POST":
         year = request.form.get("year_inp")
 
-    bl_img_path, bl_img2_path = get_best_laps(int(year))
-    champ_graph_path = get_championships_graph(int(year))
-    cc_graph_path = get_constructors_cup_graph(int(year))
-    cc_pts_path = get_constructors_cup_points(int(year))
 
-    context = {"template_title": template_title, "year": year, "bl_img": bl_img_path, "bl_img2": bl_img2_path,
-               "ch_img": champ_graph_path, "cc_img": cc_graph_path, "ccpts_img": cc_pts_path}
+    plots = parse_all_plots(int(year))
+    create_db()
+    upload_image_to_db(year, plots)
+
+    for i in range(1, 6):
+        get_plot(year, i)
+
+    context = {"template_title": template_title, "year": year}
     return render_template("index.html", context=context)
+
+
+@app.route('/plot/<int:year>/<int:number>')
+def get_plot(year, number):
+    image_data = get_images(year)[number]
+
+    if image_data:
+        return send_file(io.BytesIO(image_data), mimetype='image/png')
+    else:
+        return "График не найден"
 
 
 if __name__ == "__main__":
