@@ -49,26 +49,39 @@ def get_images(year):
 
 @app.route('/', methods=["GET", "POST"])
 def get_inp():
-    template_title = "F1 statistics"
-    year = "2024"
+    context = {"template_title": "F1 statistics"}
+    # year = "2024"
+    year = "1955"
 
     if request.method == "POST":
         year = request.form.get("year_inp")
+        if not year.isnumeric():
+            # year = "2024"
+            year = "1955"
+        elif int(year) < 1950 or int(year) > 2024:
+            year = None
 
+    if year:
+        plots = parse_all_plots(int(year))
+        create_db()
+        upload_image_to_db(year, plots)
 
-    plots = parse_all_plots(int(year))
-    create_db()
-    upload_image_to_db(year, plots)
+        for i in range(1, 6):
+            get_plot(year, i)
+        context["year"] = year
+    else:
+        for i in range(1, 6):
+            # get_plot("2024", i)
+            get_plot("1955", i)
+        context["year"] = 0
 
-    for i in range(1, 6):
-        get_plot(year, i)
-
-    context = {"template_title": template_title, "year": year}
     return render_template("index.html", context=context)
 
 
 @app.route('/plot/<int:year>/<int:number>')
 def get_plot(year, number):
+    if year == 0:
+        year = "2024"
     image_data = get_images(year)[number]
 
     if image_data:

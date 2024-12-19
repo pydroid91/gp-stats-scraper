@@ -9,10 +9,10 @@
         <input type="text" name="year_inp">
     </form>
 
-    {% if context.year is not none %}
+    {% if context.year != 0 %}
         <p>Статистика за сезон {{ context.year }}</p>
     {% else %}
-        <p>Введите год</p>
+        <p>Введите год (первый сезон был в 1950г.)</p>
     {% endif %}
 
     <form>

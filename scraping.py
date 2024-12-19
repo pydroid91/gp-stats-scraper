@@ -58,7 +58,16 @@ def get_best_laps(year):
 # creates pie chart of constructors cup points in certain season
 def get_constructors_cup_points(year):
     if year < 1958:
-        return f"static/{year}.png"
+        plt.figure()
+        plt.plot()
+        plt.text(0, 0, "Кубок конструкторов впервые начал разыгрываться в 1958г.", ha="center", va="center")
+        plt.axis("off")
+        b = io.BytesIO()
+        plt.savefig(b, format="png")
+        b.seek(0)
+        plt.close()
+        return b
+
     pts_url = f"https://gpracingstats.com/seasons/{year}-world-championship/constructor-standings/"
     pts_src = requests.get(pts_url, headers=HEADER).text
     pts_soup = BeautifulSoup(pts_src, "lxml")
@@ -88,6 +97,7 @@ def get_constructors_cup_points(year):
     b.seek(0)
     plt.close()
     return b
+
 
 # returns point system used in certain season
 def get_point_system(year):
@@ -148,8 +158,16 @@ def get_championships_graph(year):
 
 
 def get_constructors_cup_graph(year):
-    if year < 1958 or year > 2024:
-        return
+    if year < 1958:
+        plt.figure()
+        plt.plot()
+        plt.text(0, 0, "Кубок конструкторов впервые начал разыгрываться в 1958г.", ha="center", va="center")
+        plt.axis("off")
+        b = io.BytesIO()
+        plt.savefig(b, format="png")
+        b.seek(0)
+        plt.close()
+        return b
     champ_url = f"https://gpracingstats.com/seasons/{year}-world-championship/constructor-standings/"
     table = pd.read_html(champ_url, index_col=0)[0]
     labels = list(table.columns)[1:-1]
