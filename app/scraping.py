@@ -1,5 +1,5 @@
 import matplotlib
-matplotlib.use("Agg")
+# matplotlib.use("Agg")
 import requests
 from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
@@ -12,9 +12,9 @@ HEADER = {'User-Agent': 'Mozilla/5.0'}
 
 def save_plot():
     b = io.BytesIO()
-    plt.savefig(b, format="png")
+    # plt.savefig(b, format="png")
     b.seek(0)
-    plt.close()
+    # plt.close()
     return b
 
 
@@ -30,10 +30,11 @@ def save_empty_cc_plot():
     return b
 
 
-def save_best_laps_plots(info_dict):
-    plt.figure()
-    plt.bar(info_dict.keys(), info_dict.values())
-    plt.xticks(fontsize=8)
+def save_best_laps_plots(info_dict, kind, ax):
+    # plt.figure()
+    ax.set_title(f"Количество лучших кругов (по {kind})")
+    ax.bar(info_dict.keys(), info_dict.values())
+    # sub_ax.xticks(fontsize=8)
     b = save_plot()
     return b
 
@@ -44,7 +45,7 @@ def get_soup(url):
 
 
 # creates bar plots of number of best laps for drivers and constructors in certain season
-def get_best_laps(year):
+def get_best_laps(year, ax1, ax2):
     bl_soup = get_soup(f"https://gpracingstats.com/seasons/{year}-world-championship/fastest-laps/")
 
     bl_drivers = {}
@@ -68,11 +69,11 @@ def get_best_laps(year):
         else:
             bl_constructors[constructor] += 1
 
-    return [save_best_laps_plots(bl_constructors), save_best_laps_plots(bl_drivers)]
+    return [save_best_laps_plots(bl_constructors, "командам", ax1), save_best_laps_plots(bl_drivers, "пилотам", ax2)]
 
 
 # creates pie chart of constructors cup points in certain season
-def get_constructors_cup_points(year):
+def get_constructors_cup_points(year, sub_ax):
     if year < 1958:
         return save_empty_cc_plot()
 
@@ -96,8 +97,9 @@ def get_constructors_cup_points(year):
             constructor = cells[1].find("a").text
             points[constructor] = pts
 
-    plt.figure()
-    plt.pie(points.values(), labels=points.keys())
+    # sub_ax.figure()
+    sub_ax.set_title("Распределение очков кубка конструкторов")
+    sub_ax.pie(points.values(), labels=points.keys())
     return save_plot()
 
 
@@ -133,25 +135,27 @@ def replace_positions_with_points(results, year):
 
 
 # creates a graph of points scored during the season by drivers from the top 5 in championships
-def get_championships_graph(year):
+def get_championships_graph(year, sub_ax):
     champ_url = f"https://gpracingstats.com/seasons/{year}-world-championship/driver-standings/"
 
     table = pd.read_html(champ_url, index_col=0)[0]
     labels = list(table.columns)[1:-1]
-    plt.figure()
+    # plt.figure()
     for i in range(6):
         y = list(table.iloc[i][1:-1])
         y = list(accumulate(replace_positions_with_points(y, year)))
         driver_record = table["Driver"].iloc[i]
         driver_name = driver_record[driver_record.find(")") + 1: driver_record.find("(", 2)]
-        plt.plot(labels, y, label=driver_name)
+        sub_ax.plot(labels, y, label=driver_name)
 
-    plt.legend(loc="upper left")
-    plt.xticks(rotation=90)
+    sub_ax.set_title("График очков чемпионата")
+    sub_ax.legend(loc="upper left")
+    # sub_ax.xticks(rotation=90)
+    sub_ax.tick_params(labelrotation=90)
     return save_plot()
 
 
-def get_constructors_cup_graph(year):
+def get_constructors_cup_graph(year, sub_ax):
     if year < 1958:
         return save_empty_cc_plot()
 
@@ -160,7 +164,7 @@ def get_constructors_cup_graph(year):
     labels = list(table.columns)[1:-1]
 
     constructors_points = {}
-    plt.figure()
+    # plt.figure()
     for i in range(len(table.index) - 1):
         constructor_record = table["Constructor"].iloc[i]
         constructor = constructor_record[constructor_record.find(")") + 1:]
@@ -175,18 +179,36 @@ def get_constructors_cup_graph(year):
             constructors_points[constructor] += y
 
     for constructor in constructors_points:
-        plt.plot(labels, constructors_points[constructor], label=constructor)
+        sub_ax.plot(labels, constructors_points[constructor], label=constructor)
 
-    plt.legend(loc="upper left")
-    plt.xticks(rotation=90)
+    # plt.title("График очков кубка конструкторов")
+    # plt.legend(loc="upper left")
+    # plt.xticks(rotation=90)
+    sub_ax.set_title("График очков кубка конструкторов")
+    sub_ax.legend(loc="upper left")
+    # sub_ax.xticks(rotation=90)
+    sub_ax.tick_params(labelrotation=90)
 
     return save_plot()
 
 
 def parse_all_plots(year):
-    plots = []
-    plots.extend(get_best_laps(year))
-    plots.append(get_championships_graph(year))
-    plots.append(get_constructors_cup_graph(year))
-    plots.append(get_constructors_cup_points(year))
-    return plots
+    fig, axs = plt.subplots(3, 2, figsize=(10, 10), constrained_layout=True)
+    # fig.tight_layout()
+    fig.delaxes(axs[2, 1])
+
+    get_best_laps(year, axs[0, 0], axs[0, 1])
+    get_championships_graph(year, axs[1, 0])
+    get_constructors_cup_graph(year, axs[1, 1])
+    get_constructors_cup_points(year, axs[2, 0])
+    plt.show()
+
+    # plots = []
+    # plots.extend(get_best_laps(year))
+    # plots.append(get_championships_graph(year))
+    # plots.append(get_constructors_cup_graph(year))
+    # plots.append(get_constructors_cup_points(year))
+    # return plots
+
+
+parse_all_plots(2024)
