@@ -30,9 +30,10 @@ def save_empty_cc_plot():
     return b
 
 
-def save_best_laps_plots(info_dict):
+def save_best_laps_plots(info_dict, title):
     plt.figure()
     plt.bar(info_dict.keys(), info_dict.values())
+    plt.title(f"Количество лучших кругов (по {title})")
     plt.xticks(fontsize=8)
     b = save_plot()
     return b
@@ -68,7 +69,7 @@ def get_best_laps(year):
         else:
             bl_constructors[constructor] += 1
 
-    return [save_best_laps_plots(bl_constructors), save_best_laps_plots(bl_drivers)]
+    return [save_best_laps_plots(bl_constructors, "командам"), save_best_laps_plots(bl_drivers, "пилотам")]
 
 
 # creates pie chart of constructors cup points in certain season
@@ -97,7 +98,8 @@ def get_constructors_cup_points(year):
             points[constructor] = pts
 
     plt.figure()
-    plt.pie(points.values(), labels=points.keys())
+    plt.pie(points.values(), labels=points.keys(), autopct='%1.0f%%', radius=1.3)
+    plt.title("Распределение очков кубка конструкторов")
     return save_plot()
 
 
@@ -148,6 +150,7 @@ def get_championships_graph(year):
 
     plt.legend(loc="upper left")
     plt.xticks(rotation=90)
+    plt.title("График очков чемпионата")
     return save_plot()
 
 
@@ -179,6 +182,7 @@ def get_constructors_cup_graph(year):
 
     plt.legend(loc="upper left")
     plt.xticks(rotation=90)
+    plt.title("График очков кубка конструкторов")
 
     return save_plot()
 

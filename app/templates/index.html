@@ -3,45 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <title>{{context.template_title}}</title>
+    <style>
+        a {font-size: 22px}
+        table {margin: 0 auto}
+        body {background-color: #D6FFFA; font-family: Verdana}
+    </style>
 </head>
 <body>
-    <form method="post">
-        <input type="text" name="year_inp">
-    </form>
+    <div style="width: 100%; text-align: center">
+        <h1 style="font-size: 40px">GP-stats-scraper</h1>
+        <a>Сервис визуализирует статистику заданного сезона чемпионата Формулы-1.</a><br>
+        <a>Впервые чемпионат мира состоялся в 1950г, Кубок конструкторов начал разыгрываться в 1958г.</a><br><br>
 
-    {% if context.year != 0 %}
-        <p>Статистика за сезон {{ context.year }}</p>
-    {% else %}
-        <p>Введите год (первый сезон был в 1950г.)</p>
-    {% endif %}
+        <a>Введите год для просмотра статистики:</a>
 
-    <form>
-        <div>
-            <a>Количество лучших кругов (по командам)</a>
-            <img src="/plot/{{ context.year }}/1" alt="no image">
-        </div>
+        <form method="post">
+            <input type="text" name="year_inp" style="width: 30%">
+        </form>
 
-        <div>
-            <a>Количество лучших кругов (по пилотам)</a>
-            <img src="/plot/{{ context.year }}/2" alt="no image">
-        </div>
+        {% if context.year != 0 %}
+            <h2 style="text-align: center;">Статистика за сезон {{ context.year }}</h2>
+        {% else %}
+            <h2 style="text-align: center;">Статистика за сезон 2024 </h2>
+        {% endif %}
 
-        <div>
-            <a>График очков чемпионата</a>
-            <img src="/plot/{{ context.year }}/3" alt="no image">
-        </div>
+        <form>
+            <table>
+              <tr>
+                <td><img src="/plot/{{ context.year }}/1" alt="no image"></td>
+                <td><img src="/plot/{{ context.year }}/2" alt="no image"></td>
+              </tr>
+              <tr>
+                <td><img src="/plot/{{ context.year }}/3" alt="no image"></td>
+                <td><img src="/plot/{{ context.year }}/4" alt="no image"></td>
+              </tr>
 
-        <div>
-            <a>График очков кубка конструкторов</a>
-            <img src="/plot/{{ context.year }}/4" alt="no image">
-        </div>
-
-        <div>
-            <a>Распределение очков кубка конструкторов</a>
-            <img src="/plot/{{ context.year }}/5" alt="no image">
-        </div>
-
-    </form>
-
+              <tr>
+                <td align="center" colspan="2"><img src="/plot/{{ context.year }}/5" alt="no image"></td>
+              </tr>
+            </table>
+        </form>
+    </div>
 </body>
 </html>
